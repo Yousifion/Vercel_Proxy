@@ -109,15 +109,27 @@ export default async function handle(request: NextRequest): Promise<Response> {
         body: JSON.stringify(body),
     };
 
+    // ... inside your handle function ...
+
     try {
         const targetResponse = await fetch(targetUrl, fetchOptions);
         
         // Clone the response to modify headers
         const response = new Response(targetResponse.body, targetResponse);
+
+        // --- START OF FIX ---
+
+        // 1. Set the CORS header (this was already correct)
         response.headers.set("Access-Control-Allow-Origin", "*");
         
-        // Clean up or adjust other headers from the upstream if necessary
-        // response.headers.delete("Header-To-Remove");
+        // 2. Proactively delete any upstream CSP header.
+        // This prevents the target API from breaking your frontend.
+        response.headers.delete("Content-Security-Policy");
+
+        // 3. You might as well delete this one too, just in case.
+        response.headers.delete("X-Content-Security-Policy");
+
+        // --- END OF FIX ---
 
         return response;
 
